@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = FEB6F7622EA99624005051BA /* Build configuration list for PBXProject "SodaFloatGame2" */;
+			buildConfigurationList = FEB6F7622EA99624005051BA /* Build configuration list for PBXProject "SodaFloatGame" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -519,7 +519,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FEB6F7622EA99624005051BA /* Build configuration list for PBXProject "SodaFloatGame2" */ = {
+		FEB6F7622EA99624005051BA /* Build configuration list for PBXProject "SodaFloatGame" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				FEB6F7922EA99628005051BA /* Debug */,

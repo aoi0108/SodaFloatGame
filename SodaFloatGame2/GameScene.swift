@@ -17,9 +17,9 @@ struct UIConstants {
     }
     struct FontSizes {
         static let title: CGFloat = 40
-        static let score: CGFloat = 30
+        static let score: CGFloat = 36 // Title for panels
         static let button: CGFloat = 30
-        static let body: CGFloat = 25
+        static let body: CGFloat = 28  // Body text for panels
         static let small: CGFloat = 20
     }
     struct Colors {
@@ -122,7 +122,98 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if score > highScore {
             highScore = score
             UserDefaults.standard.set(highScore, forKey: "highScore")
-            highScoreLabel.text = "High Score: \(highScore)"
+            
+            // Animate the existing highScoreLabel to announce the new record
+            let originalText = "High Score: \(highScore)"
+            let originalColor = highScoreLabel.fontColor
+            
+            highScoreLabel.text = "New High Score!"
+            highScoreLabel.fontColor = UIConstants.Colors.darkGray
+            
+            let scaleUp = SKAction.scale(to: 1.2, duration: 0.25)
+            let wait = SKAction.wait(forDuration: 1.5)
+            let scaleDown = SKAction.scale(to: 1.0, duration: 0.25)
+            
+            let changeTextBack = SKAction.run {
+                self.highScoreLabel.text = originalText
+                self.highScoreLabel.fontColor = originalColor
+            }
+            
+            let sequence = SKAction.sequence([scaleUp, wait, scaleDown, changeTextBack])
+            highScoreLabel.run(sequence)
+            
+            // Run confetti animation
+            runNewHighScoreAnimation()
+        }
+    }
+
+    func runNewHighScoreAnimation() {
+        // 1. Define slightly more saturated pastel colors
+        let colors: [UIColor] = [
+            UIColor(red: 0.85, green: 0.85, blue: 1.0, alpha: 1.0), // Lavender
+            UIColor(red: 0.8, green: 1.0, blue: 0.8, alpha: 1.0), // Mint Green
+            UIColor(red: 1.0, green: 0.8, blue: 0.8, alpha: 1.0), // Pink
+            UIColor(red: 1.0, green: 0.95, blue: 0.7, alpha: 1.0)  // Yellow
+        ]
+
+        // 2. Create and animate confetti pieces
+        let confettiCount = 150
+        for _ in 0..<confettiCount {
+            let shapeType = Int.random(in: 0...1)
+            let piece: SKShapeNode
+            let pieceSize: CGSize
+            
+            if shapeType == 0 {
+                // Rounded rectangle
+                pieceSize = CGSize(width: 10, height: 18)
+                piece = SKShapeNode(rectOf: pieceSize, cornerRadius: 5)
+            } else {
+                // Circle
+                pieceSize = CGSize(width: 10, height: 10)
+                piece = SKShapeNode(circleOfRadius: 7)
+            }
+            
+            piece.fillColor = colors.randomElement()!
+            piece.strokeColor = .clear
+            
+            // Create a simple shadow node for a Neumorphic feel
+            let shadow = piece.copy() as! SKShapeNode
+            shadow.fillColor = UIColor.black.withAlphaComponent(0.15)
+            shadow.position = CGPoint(x: 2, y: -2)
+            shadow.zPosition = -1 // Behind the main piece
+            piece.addChild(shadow)
+            
+            // Use a container to move the piece and its shadow together
+            let container = SKNode()
+            container.position = CGPoint(x: CGFloat.random(in: 0...frame.width), y: frame.height + 40)
+            container.zPosition = UIConstants.ZPositions.panel + 1
+            container.addChild(piece)
+            
+            // Physics
+            let physicsBody = SKPhysicsBody(circleOfRadius: pieceSize.width / 2)
+            physicsBody.affectedByGravity = true
+            physicsBody.mass = CGFloat.random(in: 0.02...0.06)
+            physicsBody.restitution = 0.4
+            container.physicsBody = physicsBody
+            
+            addChild(container)
+            
+            // Initial "pop"
+            let dx = CGFloat.random(in: -40...40)
+            let dy = CGFloat.random(in: 10...30)
+            container.physicsBody?.applyImpulse(CGVector(dx: dx, dy: dy))
+            
+            // Add a gentle rotation
+            let rotation = SKAction.rotate(byAngle: CGFloat.random(in: -3...3), duration: Double.random(in: 3...5))
+            container.run(SKAction.repeatForever(rotation))
+            
+            // Fade out and remove
+            let fadeOutAction = SKAction.sequence([
+                SKAction.wait(forDuration: 4.0),
+                SKAction.fadeOut(withDuration: 1.0),
+                SKAction.removeFromParent()
+            ])
+            container.run(fadeOutAction)
         }
     }
     
@@ -199,33 +290,65 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func setupHelpPanel() {
-        let panelSize = CGSize(width: frame.width * 0.75, height: frame.height * 0.6)
-        helpPanelNode = createNeuromorphicNode(size: panelSize, cornerRadius: 20)
+        // 1. ゲーム背景色で画面全体を覆うパネルを作成
+        helpPanelNode = SKSpriteNode(color: backgroundColor, size: frame.size)
         helpPanelNode.position = CGPoint(x: frame.midX, y: frame.midY)
         helpPanelNode.zPosition = UIConstants.ZPositions.panel
         helpPanelNode.isHidden = true
         addChild(helpPanelNode)
+
+        // 2. 属性付き文字列(NSAttributedString)でテキスト全体をスタイリング
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        paragraphStyle.paragraphSpacing = 18
+
+        let titleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: UIConstants.Fonts.bold, size: UIConstants.FontSizes.title)!,
+            .foregroundColor: UIConstants.Colors.darkGray,
+            .paragraphStyle: paragraphStyle
+        ]
         
-        let panelBase = helpPanelNode.children.first!
+        let headerAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: UIConstants.Fonts.bold, size: UIConstants.FontSizes.body)!,
+            .paragraphStyle: paragraphStyle
+        ]
         
-        // Title
-        let titleLabel = SKLabelNode(fontNamed: UIConstants.Fonts.bold)
-        titleLabel.text = "How to Play"
-        titleLabel.fontSize = UIConstants.FontSizes.score
-        titleLabel.fontColor = UIConstants.Colors.darkGray
-        titleLabel.position = CGPoint(x: 0, y: panelSize.height / 2 - 50)
-        panelBase.addChild(titleLabel)
+        let ruleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: UIConstants.Fonts.regular, size: UIConstants.FontSizes.body)!,
+            .foregroundColor: UIConstants.Colors.darkGray,
+            .paragraphStyle: paragraphStyle
+        ]
         
-        // Instructions
-        let instructions = "Tap to stop the cherry.\n\n- Good cherries on icecream: +1 point\n- Bad cherries on icecream: Game Over\n- Good cherries on the ground: Game Over\n- Bad cherries on the ground: +1 point\n\nTap the screen to close this window."
-        let instructionLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
-        instructionLabel.text = instructions
-        instructionLabel.fontSize = UIConstants.FontSizes.body
-        instructionLabel.fontColor = UIConstants.Colors.darkGray
+        let closeAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: UIConstants.Fonts.regular, size: UIConstants.FontSizes.small)!,
+            .foregroundColor: UIConstants.Colors.lightGray,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        let fullString = NSMutableAttributedString()
+
+        fullString.append(NSAttributedString(string: "How to Play\n\n", attributes: titleAttributes))
+        
+        fullString.append(NSAttributedString(string: "SCORE +1\n", attributes: headerAttributes.merging([.foregroundColor: UIColor(red: 0.2, green: 0.6, blue: 0.4, alpha: 1.0)]) { (_, new) in new }))
+        fullString.append(NSAttributedString(string: "Good cherry on icecream\nBad cherry on the ground\n\n", attributes: ruleAttributes))
+        
+        fullString.append(NSAttributedString(string: "GAME OVER\n", attributes: headerAttributes.merging([.foregroundColor: UIConstants.Colors.gameOverRed]) { (_, new) in new }))
+        fullString.append(NSAttributedString(string: "Good cherry on the ground\nBad cherry on icecream\n\n\n", attributes: ruleAttributes))
+        
+        fullString.append(NSAttributedString(string: "Tap anywhere to close", attributes: closeAttributes))
+
+        // 3. ラベルを生成し、中央に配置
+        let instructionLabel = SKLabelNode()
+        instructionLabel.attributedText = fullString
         instructionLabel.numberOfLines = 0
-        instructionLabel.preferredMaxLayoutWidth = panelSize.width - 40
-        instructionLabel.position = CGPoint(x: 0, y: 0)
-        panelBase.addChild(instructionLabel)
+        instructionLabel.preferredMaxLayoutWidth = frame.width - 80
+        
+        // 中央揃えを明示的に指定
+        instructionLabel.verticalAlignmentMode = .center
+        instructionLabel.horizontalAlignmentMode = .center
+        instructionLabel.position = .zero 
+        
+        helpPanelNode.addChild(instructionLabel)
     }
     
     private func createCherry() {
@@ -401,7 +524,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if collision == (PhysicsCategory.cherry | PhysicsCategory.ground) {
             let cherryBody = (contact.bodyA.categoryBitMask == PhysicsCategory.cherry) ? contact.bodyA : contact.bodyB
-            if let cherryNode = cherryBody.node as? SKSpriteNode {
+            if cherryBody.node is SKSpriteNode {
                 if isGoodCherry {
                     print("良いチェリーが地面に到達しました。ゲームオーバー！")
                     gameOver()
@@ -413,8 +536,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         SKAction.wait(forDuration: 1.0), // 画面外に完全に出るまでの時間
                         SKAction.removeFromParent()
                     ])
-                    if let cherryNode = cherryBody.node {
-                        cherryNode.run(fallOffScreenAction)
+                    if let nodeToAnimate = cherryBody.node {
+                        nodeToAnimate.run(fallOffScreenAction)
                     }
                     // 少しディレイを置いて次のcherryを生成
                     run(SKAction.wait(forDuration: 0.5)) { [weak self] in
