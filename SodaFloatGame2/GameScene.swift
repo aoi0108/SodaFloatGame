@@ -93,645 +93,157 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(startLabel)
     }
     
-    
-    
-        private func setupScoreLabel() {
-    
-    
-    
-            scoreLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
-    
-    
-    
-            scoreLabel.text = "Score: 0"
-    
-    
-    
-            scoreLabel.fontSize = UIConstants.FontSizes.score
-    
-    
-    
-            scoreLabel.fontColor = UIConstants.Colors.darkGray
-    
-    
-    
-            scoreLabel.position = CGPoint(x: frame.midX, y: frame.maxY - 300 )
-    
-    
-    
-            scoreLabel.zPosition = UIConstants.ZPositions.ui
-    
-    
-    
-            addChild(scoreLabel)
-    
-    
-    
-        }
-    
-    
-    
-        
-    
-    
-    
-        private func setupHighScoreLabel() {
-    
-    
-    
-            highScoreLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
-    
-    
-    
-            highScoreLabel.text = "High Score: 0"
-    
-    
-    
-            highScoreLabel.fontSize = UIConstants.FontSizes.small
-    
-    
-    
-            highScoreLabel.fontColor = UIConstants.Colors.lightGray
-    
-    
-    
-            highScoreLabel.position = CGPoint(x: frame.midX, y: scoreLabel.position.y - 50)
-    
-    
-    
-            highScoreLabel.zPosition = UIConstants.ZPositions.ui
-    
-    
-    
-            addChild(highScoreLabel)
-    
-    
-    
-        }
-    
-    
-    
-        
-    
-    
-    
-        private func loadHighScore() {
-    
-    
-    
-            highScore = UserDefaults.standard.integer(forKey: "highScore")
-    
-    
-    
+    private func setupScoreLabel() {
+        scoreLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
+        scoreLabel.text = "Score: 0"
+        scoreLabel.fontSize = UIConstants.FontSizes.score
+        scoreLabel.fontColor = UIConstants.Colors.darkGray
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.maxY - 300 )
+        scoreLabel.zPosition = UIConstants.ZPositions.ui
+        addChild(scoreLabel)
+    }
+    
+    private func setupHighScoreLabel() {
+        highScoreLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
+        highScoreLabel.text = "High Score: 0"
+        highScoreLabel.fontSize = UIConstants.FontSizes.small
+        highScoreLabel.fontColor = UIConstants.Colors.lightGray
+        highScoreLabel.position = CGPoint(x: frame.midX, y: scoreLabel.position.y - 50)
+        highScoreLabel.zPosition = UIConstants.ZPositions.ui
+        addChild(highScoreLabel)
+    }
+    
+    private func loadHighScore() {
+        highScore = UserDefaults.standard.integer(forKey: "highScore")
+        highScoreLabel.text = "High Score: \(highScore)"
+    }
+    
+    private func saveHighScore() {
+        if score > highScore {
+            highScore = score
+            UserDefaults.standard.set(highScore, forKey: "highScore")
             highScoreLabel.text = "High Score: \(highScore)"
-    
-    
-    
         }
+    }
     
-    
-    
+    private func setupSoda() {
+        sodaNode = SKSpriteNode(imageNamed: "sodafloat") // soda.png を使用
+        sodaNode.position = CGPoint(x: frame.midX, y: frame.minY + sodaNode.size.height / 2) // 画面下部に配置
+        sodaNode.zPosition = UIConstants.ZPositions.soda
+        addChild(sodaNode)
         
+        sodaNode.physicsBody = SKPhysicsBody(rectangleOf: sodaNode.size) // 四角形で作成
+        sodaNode.physicsBody?.isDynamic = false // 動かないようにする
+        sodaNode.physicsBody?.categoryBitMask = PhysicsCategory.soda // sodaカテゴリに設定
+        sodaNode.physicsBody?.collisionBitMask = PhysicsCategory.none
+        sodaNode.physicsBody?.contactTestBitMask = PhysicsCategory.cherry // cherryとの接触を検知する
+    }
     
+    private func setupGround() {
+        let ground = SKSpriteNode(color: .clear, size: CGSize(width: frame.width, height: 10))
+        ground.position = CGPoint(x: frame.midX, y: -100) // 画面外の少し下
+        ground.name = "ground"
+        addChild(ground)
+        ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
+        ground.physicsBody?.isDynamic = false
+        ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
+        ground.physicsBody?.collisionBitMask = PhysicsCategory.none // 他のオブジェクトとは衝突しない
+        ground.physicsBody?.contactTestBitMask = PhysicsCategory.cherry // cherryとの接触を検知
+    }
     
-    
-        private func saveHighScore() {
-    
-    
-    
-            if score > highScore {
-    
-    
-    
-                highScore = score
-    
-    
-    
-                UserDefaults.standard.set(highScore, forKey: "highScore")
-    
-    
-    
-                highScoreLabel.text = "High Score: \(highScore)"
-    
-    
-    
-            }
-    
-    
-    
-        }
-    
-    
-    
+    private func createNeuromorphicNode(size: CGSize, cornerRadius: CGFloat) -> SKNode {
+        let node = SKNode()
+        let base = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
+        base.fillColor = backgroundColor
+        base.strokeColor = .clear
+        node.addChild(base)
         
-    
-    
-    
-        private func setupSoda() {
-    
-    
-    
-            sodaNode = SKSpriteNode(imageNamed: "sodafloat") // soda.png を使用
-    
-    
-    
-            sodaNode.position = CGPoint(x: frame.midX, y: frame.minY + sodaNode.size.height / 2) // 画面下部に配置
-    
-    
-    
-            sodaNode.zPosition = UIConstants.ZPositions.soda
-    
-    
-    
-            addChild(sodaNode)
-    
-    
-    
-            
-    
-    
-    
-            // sodaの物理ボディを設定 (静的、当たり判定のみ)
-    
-    
-    
-            // 画像の形に合わせた物理ボディを作成する場合 (SKPhysicsBody(texture:size:))
-    
-    
-    
-            // または、四角形で当たり判定を限定する場合 (soda.frameを参考に)
-    
-    
-    
-            sodaNode.physicsBody = SKPhysicsBody(rectangleOf: sodaNode.size) // 四角形で作成
-    
-    
-    
-            sodaNode.physicsBody?.isDynamic = false // 動かないようにする
-    
-    
-    
-            sodaNode.physicsBody?.categoryBitMask = PhysicsCategory.soda // sodaカテゴリに設定
-    
-    
-    
-            sodaNode.physicsBody?.collisionBitMask = PhysicsCategory.none // 他のオブジェクトとは衝突しない（物理的な動きはしない）
-    
-    
-    
-            sodaNode.physicsBody?.contactTestBitMask = PhysicsCategory.cherry // cherryとの接触を検知する
-    
-    
-    
-        }
-    
-    
-    
+        let darkShadow = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
+        darkShadow.position = CGPoint(x: 3, y: -3)
+        darkShadow.fillColor = UIConstants.Colors.darkGray.withAlphaComponent(0.5)
+        darkShadow.strokeColor = .clear
+        darkShadow.zPosition = UIConstants.ZPositions.background
+        base.addChild(darkShadow)
         
-    
-    
-    
-        private func setupGround() {
-    
-    
-    
-            // 画面の下端に透明な地面ノードを設置
-    
-    
-    
-            let ground = SKSpriteNode(color: .clear, size: CGSize(width: frame.width, height: 10))
-    
-    
-    
-            ground.position = CGPoint(x: frame.midX, y: -100) // 画面外の少し下
-    
-    
-    
-            ground.name = "ground"
-    
-    
-    
-            addChild(ground)
-    
-    
-    
-            
-    
-    
-    
-            ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
-    
-    
-    
-            ground.physicsBody?.isDynamic = false
-    
-    
-    
-            ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
-    
-    
-    
-            ground.physicsBody?.collisionBitMask = PhysicsCategory.none // 他のオブジェクトとは衝突しない
-    
-    
-    
-            ground.physicsBody?.contactTestBitMask = PhysicsCategory.cherry // cherryとの接触を検知
-    
-    
-    
-        }
-    
-    
-    
+        let lightShadow = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
+        lightShadow.position = CGPoint(x: -3, y: 3)
+        lightShadow.fillColor = UIColor.white.withAlphaComponent(0.9)
+        lightShadow.strokeColor = .clear
+        lightShadow.zPosition = UIConstants.ZPositions.background
+        base.addChild(lightShadow)
         
-    
-    
-    
-        private func createNeuromorphicNode(size: CGSize, cornerRadius: CGFloat) -> SKNode {
-    
-    
-    
-            let node = SKNode()
-    
-    
-    
-    
-    
-    
-    
-            // Base shape
-    
-    
-    
-            let base = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
-    
-    
-    
-            base.fillColor = backgroundColor
-    
-    
-    
-            base.strokeColor = .clear
-    
-    
-    
-            node.addChild(base)
-    
-    
-    
-    
-    
-    
-    
-            // Dark shadow
-    
-    
-    
-            let darkShadow = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
-    
-    
-    
-            darkShadow.position = CGPoint(x: 3, y: -3)
-    
-    
-    
-            darkShadow.fillColor = UIConstants.Colors.darkGray.withAlphaComponent(0.5)
-    
-    
-    
-            darkShadow.strokeColor = .clear
-    
-    
-    
-            darkShadow.zPosition = UIConstants.ZPositions.background
-    
-    
-    
-            base.addChild(darkShadow)
-    
-    
-    
-    
-    
-    
-    
-            // Light shadow
-    
-    
-    
-            let lightShadow = SKShapeNode(rectOf: size, cornerRadius: cornerRadius)
-    
-    
-    
-            lightShadow.position = CGPoint(x: -3, y: 3)
-    
-    
-    
-            lightShadow.fillColor = UIColor.white.withAlphaComponent(0.9)
-    
-    
-    
-            lightShadow.strokeColor = .clear
-    
-    
-    
-            lightShadow.zPosition = UIConstants.ZPositions.background
-    
-    
-    
-            base.addChild(lightShadow)
-    
-    
-    
-            
-    
-    
-    
-            return node
-    
-    
-    
-        }
-    
-    
-    
-    
-    
-    
-    
-        private func setupHelpButton() {
-    
-    
-    
-            let buttonSize = CGSize(width: 50, height: 50)
-    
-    
-    
-            helpButtonNode = createNeuromorphicNode(size: buttonSize, cornerRadius: 25)
-    
-    
-    
-            
-    
-    
-    
-            let margin: CGFloat = 20
-    
-    
-    
-            helpButtonNode.position = CGPoint(x: frame.maxX - safeAreaInsets.right - buttonSize.width - margin - 100,
-    
-    
-    
-                                            y: frame.maxY - safeAreaInsets.top - buttonSize.height - margin - 100)
-    
-    
-    
-            helpButtonNode.name = "helpButton"
-    
-    
-    
-            helpButtonNode.zPosition = UIConstants.ZPositions.ui
-    
-    
-    
-            addChild(helpButtonNode)
-    
-    
-    
-    
-    
-    
-    
-            // Help icon text
-    
-    
-    
-            let helpLabel = SKLabelNode(fontNamed: UIConstants.Fonts.bold)
-    
-    
-    
-            helpLabel.text = "?"
-    
-    
-    
-            helpLabel.fontSize = UIConstants.FontSizes.button
-    
-    
-    
-            helpLabel.fontColor = UIConstants.Colors.darkGray
-    
-    
-    
-            helpLabel.horizontalAlignmentMode = .center
-    
-    
-    
-            helpLabel.verticalAlignmentMode = .center
-    
-    
-    
-            helpButtonNode.children.first?.addChild(helpLabel)
-    
-    
-    
-            
-    
-    
-    
-            setupHelpPanel()
-    
-    
-    
-        }
-    
-    
-    
-    
-    
-    
-    
-        private func setupHelpPanel() {
-    
-    
-    
-            let panelSize = CGSize(width: frame.width * 0.75, height: frame.height * 0.6)
-    
-    
-    
-            helpPanelNode = createNeuromorphicNode(size: panelSize, cornerRadius: 20)
-    
-    
-    
-            helpPanelNode.position = CGPoint(x: frame.midX, y: frame.midY)
-    
-    
-    
-            helpPanelNode.zPosition = UIConstants.ZPositions.panel
-    
-    
-    
-            helpPanelNode.isHidden = true
-    
-    
-    
-            addChild(helpPanelNode)
-    
-    
-    
-    
-    
-    
-    
-            let panelBase = helpPanelNode.children.first!
-    
-    
-    
-    
-    
-    
-    
-            // Title
-    
-    
-    
-            let titleLabel = SKLabelNode(fontNamed: UIConstants.Fonts.bold)
-    
-    
-    
-            titleLabel.text = "How to Play"
-    
-    
-    
-            titleLabel.fontSize = UIConstants.FontSizes.score
-    
-    
-    
-            titleLabel.fontColor = UIConstants.Colors.darkGray
-    
-    
-    
-            titleLabel.position = CGPoint(x: 0, y: panelSize.height / 2 - 50)
-    
-    
-    
-            panelBase.addChild(titleLabel)
-    
-    
-    
-    
-    
-    
-    
-            // Instructions
-    
-    
-    
-            let instructions = "Tap to stop the cherry.\n\n- Good cherries in the soda: +1 point\n- Bad cherries in the soda: Game Over\n- Good cherries on the ground: Game Over\n- Bad cherries on the ground: +1 point\n\nTap the screen to close this window."
-    
-    
-    
-            let instructionLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
-    
-    
-    
-            instructionLabel.text = instructions
-    
-    
-    
-            instructionLabel.fontSize = UIConstants.FontSizes.body
-    
-    
-    
-            instructionLabel.fontColor = UIConstants.Colors.darkGray
-    
-    
-    
-            instructionLabel.numberOfLines = 0
-    
-    
-    
-            instructionLabel.preferredMaxLayoutWidth = panelSize.width - 40
-    
-    
-    
-            instructionLabel.position = CGPoint(x: 0, y: 0)
-    
-    
-    
-            panelBase.addChild(instructionLabel)
-    
-    
-    
-        }
-    
-    
-    
+        return node
+    }
+    
+    private func setupHelpButton() {
+        let buttonSize = CGSize(width: 50, height: 50)
+        helpButtonNode = createNeuromorphicNode(size: buttonSize, cornerRadius: 25)
         
+        let margin: CGFloat = 20
+        helpButtonNode.position = CGPoint(x: frame.maxX - safeAreaInsets.right - buttonSize.width - margin - 100,
+                                          y: frame.maxY - safeAreaInsets.top - buttonSize.height - margin - 100)
+        helpButtonNode.name = "helpButton"
+        helpButtonNode.zPosition = UIConstants.ZPositions.ui
+        addChild(helpButtonNode)
+        
+        // Help icon text
+        let helpLabel = SKLabelNode(fontNamed: UIConstants.Fonts.bold)
+        helpLabel.text = "?"
+        helpLabel.fontSize = UIConstants.FontSizes.button
+        helpLabel.fontColor = UIConstants.Colors.darkGray
+        helpLabel.horizontalAlignmentMode = .center
+        helpLabel.verticalAlignmentMode = .center
+        helpButtonNode.children.first?.addChild(helpLabel)
+        
+        setupHelpPanel()
+    }
     
+    private func setupHelpPanel() {
+        let panelSize = CGSize(width: frame.width * 0.75, height: frame.height * 0.6)
+        helpPanelNode = createNeuromorphicNode(size: panelSize, cornerRadius: 20)
+        helpPanelNode.position = CGPoint(x: frame.midX, y: frame.midY)
+        helpPanelNode.zPosition = UIConstants.ZPositions.panel
+        helpPanelNode.isHidden = true
+        addChild(helpPanelNode)
+        
+        let panelBase = helpPanelNode.children.first!
+        
+        // Title
+        let titleLabel = SKLabelNode(fontNamed: UIConstants.Fonts.bold)
+        titleLabel.text = "How to Play"
+        titleLabel.fontSize = UIConstants.FontSizes.score
+        titleLabel.fontColor = UIConstants.Colors.darkGray
+        titleLabel.position = CGPoint(x: 0, y: panelSize.height / 2 - 50)
+        panelBase.addChild(titleLabel)
+        
+        // Instructions
+        let instructions = "Tap to stop the cherry.\n\n- Good cherries on icecream: +1 point\n- Bad cherries on icecream: Game Over\n- Good cherries on the ground: Game Over\n- Bad cherries on the ground: +1 point\n\nTap the screen to close this window."
+        let instructionLabel = SKLabelNode(fontNamed: UIConstants.Fonts.regular)
+        instructionLabel.text = instructions
+        instructionLabel.fontSize = UIConstants.FontSizes.body
+        instructionLabel.fontColor = UIConstants.Colors.darkGray
+        instructionLabel.numberOfLines = 0
+        instructionLabel.preferredMaxLayoutWidth = panelSize.width - 40
+        instructionLabel.position = CGPoint(x: 0, y: 0)
+        panelBase.addChild(instructionLabel)
+    }
     
-    
-        private func createCherry() {
-    
-    
-    
-            // 既存のcherryがあれば削除
-    
-    
-    
-            cherryNode?.removeFromParent()
-    
-    
-    
-            
-    
-    
-    
-            // ランダムに良いチェリーか悪いチェリーかを決定
-    
-    
-    
-            isGoodCherry = arc4random_uniform(2) == 0 // 0なら良いチェリー
-    
-    
-    
-            let imageName = isGoodCherry ? "cherry" : "badcherry"
-    
-    
-    
-            
-    
-    
-    
-            cherryNode = SKSpriteNode(imageNamed: imageName)
-    
-    
-    
-            cherryNode.size = CGSize(width: 300, height: 300)
-    
-    
-    
-            
-    
-    
-    
-            // cherryの初期位置（画面上部中央）
-    
-    
-    
-            cherryNode.position = CGPoint(x: frame.midX + 100, y: frame.maxY + cherryNode.size.height / 2)
-    
-    
-    
-            cherryNode.zPosition = UIConstants.ZPositions.cherry
-    
-    
-    
-            cherryNode.name = "cherry" // ノードに名前を付けて識別しやすくする
-    
-    
-    
-            addChild(cherryNode)
+    private func createCherry() {
+        // 既存のcherryがあれば削除
+        cherryNode?.removeFromParent()
+        
+        // ランダムに良いチェリーか悪いチェリーかを決定
+        isGoodCherry = arc4random_uniform(2) == 0 // 0なら良いチェリー
+        let imageName = isGoodCherry ? "cherry" : "badcherry"
+        
+        cherryNode = SKSpriteNode(imageNamed: imageName)
+        cherryNode.size = CGSize(width: 300, height: 300)
+        
+        // cherryの初期位置（画面上部中央）
+        cherryNode.position = CGPoint(x: frame.midX + 100, y: frame.maxY + cherryNode.size.height / 2)
+        cherryNode.zPosition = UIConstants.ZPositions.cherry
+        cherryNode.name = "cherry" // ノードに名前を付けて識別しやすくする
+        addChild(cherryNode)
         
         // cherryの物理ボディを設定
         // 円形で物理ボディを作成 (より自然な当たり判定)
@@ -751,7 +263,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-
+        
         if isHelpPanelVisible {
             helpPanelNode.isHidden = true
             isHelpPanelVisible = false
@@ -759,7 +271,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             physicsWorld.speed = 1.0
             return
         }
-
+        
         var touchedNode = atPoint(location)
         while touchedNode != self {
             if touchedNode.name == "helpButton" {
@@ -772,7 +284,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             guard let parent = touchedNode.parent else { break }
             touchedNode = parent
         }
-
+        
         if gameEnded {
             // ゲームオーバー後のタップでリスタート
             restartGame()
@@ -885,7 +397,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if gameEnded { return } // ゲームオーバー後は何もしない
         
         let collision = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
-
+        
         if collision == (PhysicsCategory.cherry | PhysicsCategory.ground) {
             let cherryBody = (contact.bodyA.categoryBitMask == PhysicsCategory.cherry) ? contact.bodyA : contact.bodyB
             if let cherryNode = cherryBody.node as? SKSpriteNode {
@@ -903,8 +415,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
             }
         }
-        
-    
     }
-    
 }
