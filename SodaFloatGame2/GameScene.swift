@@ -344,7 +344,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         saveHighScore()
         
-        cherryNode?.removeFromParent()
+        // ゲームオーバー時にチェリーを削除せず、落下を続けるようにする
+        // cherryNode?.removeFromParent()
         
         // タイマーなどがある場合はここで停止
         // cherryNode?.physicsBody?.isDynamic = false // cherryの動きを止める
@@ -407,7 +408,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 } else {
                     score += 1
                     print("悪いチェリーが地面に到達しました。クリア！")
-                    cherryNode.removeFromParent()
+                    // すぐに削除せず、画面外に落ちてから削除するアクションを実行
+                    let fallOffScreenAction = SKAction.sequence([
+                        SKAction.wait(forDuration: 1.0), // 画面外に完全に出るまでの時間
+                        SKAction.removeFromParent()
+                    ])
+                    if let cherryNode = cherryBody.node {
+                        cherryNode.run(fallOffScreenAction)
+                    }
                     // 少しディレイを置いて次のcherryを生成
                     run(SKAction.wait(forDuration: 0.5)) { [weak self] in
                         self?.createCherry()
